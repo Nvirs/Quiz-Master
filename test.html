@@ -1,0 +1,1834 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Quiz API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { margin: 5px; padding: 8px 16px; }
+        #output { border: 1px solid #ddd; padding: 15px; margin-top: 20px; min-height: 200px; }
+        .section { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        input, textarea { margin: 5px 0; padding: 8px; width: 300px; }
+        label { display: block; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Quiz API Testing Dashboard</h1>
+    
+    <div class="section">
+        <h2>Authentication</h2>
+        <div>
+            <label for="username">Username:</label>
+            <input type="text" id="username" placeholder="Username">
+            
+            <label for="email">Email:</label>
+            <input type="email" id="email" placeholder="Email">
+            
+            <label for="password">Password:</label>
+            <input type="password" id="password" placeholder="Password">
+            
+            <button onclick="register()">Register</button>
+            <button onclick="login()">Login</button>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Categories</h2>
+        <button onclick="getCategories()">Get Categories</button>
+        
+        <div>
+            <label for="categoryName">Category Name:</label>
+            <input type="text" id="categoryName" placeholder="Category name">
+            
+            <label for="categoryDesc">Description:</label>
+            <textarea id="categoryDesc" placeholder="Category description"></textarea>
+            
+            <button onclick="createCategory()">Create Category</button>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Quizzes</h2>
+        <button onclick="getQuizzes()">Get Quizzes</button>
+    </div>
+    
+    <div id="output">Results will appear here...</div>
+    
+    <script>
+        // Store the token
+        let token = localStorage.getItem('token') || '';
+        
+        // Display token if it exists
+        if (token) {
+            document.getElementById('output').innerHTML = 'Token exists in localStorage. You are logged in.';
+        }
+        
+        // Helper function to show response
+        function showOutput(data) {
+            document.getElementById('output').innerHTML = 
+                typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+        }
+        
+        // Register
+        async function register() {
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.token) {
+                    token = data.token;
+                    localStorage.setItem('token', token);
+                    showOutput('Registration successful! Token saved.');
+                } else {
+                    showOutput(data);
+                }
+            } catch (error) {
+                showOutput('Error: ' + error.message);
+            }
+        }
+        
+        // Login
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.token) {
+                    token = data.token;
+                    localStorage.setItem('token', token);
+                    showOutput('Login successful! Token saved.');
+                } else {
+                    showOutput(data);
+                }
+            } catch (error) {
+                showOutput('Error: ' + error.message);
+            }
+        }
+        
+        // Get Categories
+        async function getCategories() {
+            try {
+                const response = await fetch('http://localhost:5000/api/categories');
+                const data = await response.json();
+                showOutput(data);
+            } catch (error) {
+                showOutput('Error: ' + error.message);
+            }
+        }
+        
+        // Create Category
+        async function createCategory() {
+            if (!token) {
+                showOutput('Please login first to get a token');
+                return;
+            }
+            
+            const name = document.getElementById('categoryName').value;
+            const description = document.getElementById('categoryDesc').value;
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/categories', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                const data = await response.json();
+                showOutput(data);
+            } catch (error) {
+                showOutput('Error: ' + error.message);
+            }
+        }
+        
+        // Get Quizzes
+        async function getQuizzes() {
+            try {
+                const response = await fetch('http://localhost:5000/api/quizzes');
+                const data = await response.json();
+                showOutput(data);
+            } catch (error) {
+                showOutput('Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>  -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Application</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #6c63ff;
+            --secondary-color: #f8f9fa;
+            --dark-color: #343a40;
+            --light-color: #f4f4f4;
+        }
+        
+        body {
+            background-color: var(--light-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--primary-color) !important;
+        }
+        
+        .quiz-card {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            height: 100%;
+        }
+        
+        .quiz-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .quiz-image {
+            height: 180px;
+            object-fit: cover;
+        }
+        
+        .category-badge {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background-color: #5952d4;
+        }
+        
+        .login-card, .register-card, .quiz-detail-card {
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .quiz-option {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .quiz-option:hover {
+            border-color: var(--primary-color);
+            background-color: #f8f9fe;
+        }
+        
+        .quiz-option.selected {
+            border-color: var(--primary-color);
+            background-color: #eeedff;
+        }
+        
+        .quiz-option.correct {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        
+        .quiz-option.incorrect {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        
+        .timer {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--dark-color);
+        }
+        
+        .progress-bar {
+            background-color: var(--primary-color);
+        }
+        
+        .category-card {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .category-card:hover {
+            transform: scale(1.03);
+        }
+        
+        .auth-form-container {
+            max-width: 450px;
+            margin: 0 auto;
+        }
+        
+        /* Animációk*/
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigáció -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <div class="container">
+        <a class="navbar-brand" href="#">QuizMaster</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="#" id="home-link">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" id="categories-link">Categories</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" id="create-quiz-link">Create Quiz</a>
+                </li>
+            </ul>
+            <div class="d-flex" id="auth-buttons">
+                <button class="btn btn-outline-primary me-2" id="login-button">Log In</button>
+                <button class="btn btn-primary" id="register-button">Register</button>
+            </div>
+            <div class="d-flex d-none" id="user-info">
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" id="profile-dropdown" data-bs-toggle="dropdown">
+                        <span id="username-display">User</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" id="my-quizzes-link">My Quizzes</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" id="logout-button">Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!--   Tartalom -->
+<div class="container py-5">
+    <!-- Home Page / Quiz List -->
+    <div id="home-page">
+        <div class="row mb-4">
+            <div class="col">
+                <h1 class="mb-3">Popular Quizzes</h1>
+                <p class="text-muted">Test your knowledge with our collection of engaging quizzes</p>
+            </div>
+        </div>
+        
+        <!-- Quiz kártyák sor -->
+        <div class="row g-4" id="quiz-container">
+            <!-- Quiz kártyák itt dinamikusan betöltődnek -->
+            <div class="col-12 text-center py-5" id="quizzes-loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading quizzes...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bejelentkezés form -->
+    <div id="login-page" class="d-none">
+        <div class="auth-form-container">
+            <div class="card login-card">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">Log In</h2>
+                    <form id="login-form">
+                        <div class="mb-3">
+                            <label for="login-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="login-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="login-password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="login-password" required>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Log In</button>
+                        </div>
+                        <p class="text-center mt-3">
+                            Don't have an account? 
+                            <a href="#" id="go-to-register">Register</a>
+                        </p>
+                    </form>
+                </div>
+            </div>
+            <div class="alert alert-danger mt-3 d-none" id="login-error"></div>
+        </div>
+    </div>
+    
+    <!-- Regisztráció form -->
+    <div id="register-page" class="d-none">
+        <div class="auth-form-container">
+            <div class="card register-card">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">Create Account</h2>
+                    <form id="register-form">
+                        <div class="mb-3">
+                            <label for="register-username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="register-username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="register-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="register-password" required>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Register</button>
+                        </div>
+                        <p class="text-center mt-3">
+                            Already have an account? 
+                            <a href="#" id="go-to-login">Log In</a>
+                        </p>
+                    </form>
+                </div>
+            </div>
+            <div class="alert alert-danger mt-3 d-none" id="register-error"></div>
+        </div>
+    </div>
+    
+    <!-- Kategóriák oldal -->
+    <div id="categories-page" class="d-none">
+        <h1 class="mb-4">Quiz Kategóriák</h1>
+        <p class="text-muted mb-4">Válasszon kategóriát, hogy megtalálja a kategóriát, amelyet érdekel</p>
+        
+        <div class="row g-4" id="categories-container">
+            <!-- Categories will be loaded here dynamically -->
+            <div class="col-12 text-center py-5" id="categories-loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading categories...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quiz részletek oldal (Quiz megtaking) -->
+    <div id="quiz-detail-page" class="d-none">
+        <div class="card quiz-detail-card">
+            <div class="card-body p-4">
+                <div id="quiz-header">
+                    <h2 id="quiz-title" class="mb-2">Quiz Title</h2>
+                    <p id="quiz-description" class="text-muted mb-3">Quiz description will appear here.</p>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge category-badge" id="quiz-category">Category</span>
+                        <div class="d-flex align-items-center">
+                            <span class="me-2">Created by:</span>
+                            <span id="quiz-creator" class="fw-bold">Username</span>
+                        </div>
+                    </div>
+                    
+                    <div class="progress mb-3">
+                        <div class="progress-bar" id="quiz-progress" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-4">
+                        <div>
+                            <span>Question </span>
+                            <span id="current-question-num">1</span>
+                            <span> of </span>
+                            <span id="total-questions">10</span>
+                        </div>
+                        <div class="timer" id="question-timer">Time left: 15s</div>
+                    </div>
+                </div>
+                
+                <div id="question-container" class="mb-4">
+                    <h3 id="question-text" class="mb-4">Question text will appear here.</h3>
+                    
+                    <div id="options-container">
+                        <!-- Opciók dinamikusan generálódnak -->
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-outline-secondary" id="prev-button" disabled>Previous</button>
+                    <button class="btn btn-primary" id="next-button">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quiz eredmények oldal -->
+    <div id="quiz-results-page" class="d-none">
+        <div class="card">
+            <div class="card-body p-4 text-center">
+                <h2 class="mb-4">Quiz Results</h2>
+                
+                <div class="mb-4">
+                    <div class="display-1 fw-bold mb-3" id="final-score">0</div>
+                    <p class="fs-4">Your Score</p>
+                </div>
+                
+                <div class="row justify-content-center mb-4">
+                    <div class="col-md-8">
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar" id="score-percentage" role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-sm-4">
+                        <div class="card bg-light">
+                            <div class="card-body py-3">
+                                <h5 class="card-title" id="correct-answers">0</h5>
+                                <p class="card-text text-success">Correct</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="card bg-light">
+                            <div class="card-body py-3">
+                                <h5 class="card-title" id="incorrect-answers">0</h5>
+                                <p class="card-text text-danger">Incorrect</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="card bg-light">
+                            <div class="card-body py-3">
+                                <h5 class="card-title" id="time-taken">0:00</h5>
+                                <p class="card-text">Time Taken</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <p id="result-message" class="fs-5">Great effort! Keep practicing to improve your score.</p>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    <button class="btn btn-primary" id="review-answers-btn">Review Answers</button>
+                    <button class="btn btn-outline-primary" id="try-again-btn">Try Again</button>
+                    <button class="btn btn-outline-secondary" id="back-to-quizzes-btn">Back to Quizzes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Létrehozás Quiz oldal -->
+    <div id="create-quiz-page" class="d-none">
+        <div class="card mx-auto" style="max-width: 700px;">
+            <div class="card-body">
+                <h2 class="mb-4" id="quiz-form-title">Create a New Quiz</h2>
+                <form id="create-quiz-form">
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" id="quiz-title-input" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="quiz-desc-input" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="quiz-category-input" required>
+                            <option value="">Select a category</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quiz Emoji</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="quiz-emoji-input" placeholder="Choose an emoji">
+                            <button class="btn btn-outline-secondary" type="button" id="emoji-picker-btn">
+                                Pick Emoji
+                            </button>
+                        </div>
+                        <div class="mt-2" id="emoji-suggestions">
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary">📚</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">❓</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">🎯</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">🧩</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">🎲</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">🎮</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">🏆</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">⭐</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">💡</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">🔍</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">📝</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">🎨</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">🎵</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">🌍</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">🧪</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary">💻</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="questions-container"></div>
+                    <button type="button" class="btn btn-outline-primary mb-3" id="add-question-btn">Add Question</button>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="quiz-public-input" checked>
+                        <label class="form-check-label" for="quiz-public-input">Make this quiz public</label>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" id="save-quiz-btn">Save Quiz</button>
+                        <button type="button" class="btn btn-secondary" id="cancel-quiz-btn">Cancel</button>
+                    </div>
+                </form>
+                <div class="alert mt-3 d-none" id="create-quiz-alert"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Saját Quiz oldal -->
+    <div id="my-quizzes-page" class="d-none">
+        <div class="container py-4">
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <h2 class="mb-3">My Quizzes</h2>
+                    <p class="text-muted">Manage your created quizzes</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-primary" id="create-new-quiz-btn">
+                        <i class="bi bi-plus"></i> Create New Quiz
+                    </button>
+                </div>
+            </div>
+            
+            <div class="row g-4" id="my-quizzes-container">
+                <!-- User's quizzes will be loaded here -->
+                <div class="col-12 text-center py-5" id="my-quizzes-loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading quizzes...</span>
+                    </div>
+                    <p class="mt-2">Loading your quizzes...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- App JavaScript -->
+<script>
+    // API endpoint base URL
+    const API_BASE_URL = 'http://localhost:5000/api';
+    
+    // Get DOM elements
+    const pages = {
+        home: document.getElementById('home-page'),
+        login: document.getElementById('login-page'),
+        register: document.getElementById('register-page'),
+        categories: document.getElementById('categories-page'),
+        quizDetail: document.getElementById('quiz-detail-page'),
+        quizResults: document.getElementById('quiz-results-page'),
+        createQuiz: document.getElementById('create-quiz-page'),
+        myQuizzes: document.getElementById('my-quizzes-page')
+    };
+    
+    // UI Elements
+    const authButtons = document.getElementById('auth-buttons');
+    const userInfo = document.getElementById('user-info');
+    const usernameDisplay = document.getElementById('username-display');
+    const quizContainer = document.getElementById('quiz-container');
+    const categoriesContainer = document.getElementById('categories-container');
+    
+    // Navigáció linkek
+    document.getElementById('home-link').addEventListener('click', showHomePage);
+    document.getElementById('categories-link').addEventListener('click', showCategoriesPage);
+    document.getElementById('login-button').addEventListener('click', () => showPage('login'));
+    document.getElementById('register-button').addEventListener('click', () => showPage('register'));
+    document.getElementById('go-to-register').addEventListener('click', () => showPage('register'));
+    document.getElementById('go-to-login').addEventListener('click', () => showPage('login'));
+    document.getElementById('logout-button').addEventListener('click', logout);
+    
+    // Form submissionok
+    document.getElementById('login-form').addEventListener('submit', handleLogin);
+    document.getElementById('register-form').addEventListener('submit', handleRegister);
+    
+    // Quiz navigáció
+    const prevButton = document.getElementById('prev-button');
+    const nextButton = document.getElementById('next-button');
+    prevButton.addEventListener('click', goToPreviousQuestion);
+    nextButton.addEventListener('click', goToNextQuestion);
+    
+    // Eredmény oldal gombok
+    document.getElementById('try-again-btn').addEventListener('click', retryQuiz);
+    document.getElementById('back-to-quizzes-btn').addEventListener('click', showHomePage);
+    
+    // Quiz állapot kezelése
+    let currentQuiz = null;
+    let currentQuestionIndex = 0;
+    let userAnswers = [];
+    let quizStartTime = 0;
+    let questionTimer = null;
+    let timeLeft = 0;
+    
+    // Auth állapot
+    let token = localStorage.getItem('token') || '';
+    let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+    
+    // Kategória emojik leképezése
+    const categoryEmojis = {
+        'Technology': '💻',
+        'Science': '🔬',
+        'History': '📚',
+        'Geography': '🌍',
+        'Sports': '⚽',
+        'Music': '🎵',
+        'Movies': '🎬',
+        'Art': '🎨',
+        'Food': '🍕',
+        'General Knowledge': '🧠',
+        'Mathematics': '🔢',
+        'Language': '💭',
+        'Nature': '🌿',
+        'Space': '🚀'
+    };
+    
+    // Az alkalmazás inicializálása
+    initApp();
+    
+    // Az alkalmazás inicializálása
+    function initApp() {
+        updateAuthUI();
+        showHomePage();
+        fetchQuizzes();
+        fetchCategories();
+    }
+    
+    // Az UI frissítése az authentikációs állapot alapján
+    function updateAuthUI() {
+        if (token && currentUser) {
+            authButtons.classList.add('d-none');
+            userInfo.classList.remove('d-none');
+            usernameDisplay.textContent = currentUser.username;
+        } else {
+            authButtons.classList.remove('d-none');
+            userInfo.classList.add('d-none');
+        }
+    }
+    
+    // Oldal navigálás
+    function showPage(pageId) {
+        Object.keys(pages).forEach(key => {
+            if (key === pageId) {
+                pages[key].classList.remove('d-none');
+            } else {
+                pages[key].classList.add('d-none');
+            }
+        });
+    }
+    
+    // Home oldal megjelenítése
+    function showHomePage() {
+        showPage('home');
+    }
+    
+    // Kategóriák oldal megjelenítése
+    function showCategoriesPage() {
+        showPage('categories');
+    }
+    
+    // Authentikáció
+    async function handleLogin(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const errorElement = document.getElementById('login-error');
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            
+            const data = await response.json();
+            
+            if (data.token) {
+                token = data.token;
+                currentUser = data.user;
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                
+                updateAuthUI();
+                showHomePage();
+                errorElement.classList.add('d-none');
+            } else {
+                errorElement.textContent = data.message || 'Login failed';
+                errorElement.classList.remove('d-none');
+            }
+        } catch (error) {
+            errorElement.textContent = 'An error occurred during login. Please try again.';
+            errorElement.classList.remove('d-none');
+        }
+    }
+    
+    async function handleRegister(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('register-username').value;
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        const errorElement = document.getElementById('register-error');
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.token) {
+                token = data.token;
+                currentUser = data.user;
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                
+                updateAuthUI();
+                showHomePage();
+                errorElement.classList.add('d-none');
+            } else {
+                errorElement.textContent = data.message || 'Registration failed. Please try again.';
+                errorElement.classList.remove('d-none');
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            errorElement.textContent = 'An error occurred during registration. Please try again.';
+            errorElement.classList.remove('d-none');
+        }
+    }
+    
+    function logout() {
+        token = '';
+        currentUser = null;
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        updateAuthUI();
+        showHomePage();
+    }
+    
+    // Quizok lekérdezése
+    async function fetchQuizzes() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/quizzes`);
+            const quizzes = await response.json();
+            
+            document.getElementById('quizzes-loading').classList.add('d-none');
+            
+            if (quizzes.length === 0) {
+                quizContainer.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <p>No quizzes found. Check back later!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            renderQuizzes(quizzes);
+        } catch (error) {
+            quizContainer.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <p class="text-danger">Error loading quizzes. Please try again later.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Quizok megjelenítése az UI-ban
+    function renderQuizzes(quizzes) {
+        quizContainer.innerHTML = '';
+        
+        quizzes.forEach(quiz => {
+            const categoryName = quiz.category?.name || 'General';
+            const emoji = quiz.emoji || categoryEmojis[categoryName] || '📝';
+            
+            const quizCard = document.createElement('div');
+            quizCard.className = 'col-md-4 mb-4';
+            quizCard.innerHTML = `
+                <div class="card quiz-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">${quiz.title}</h5>
+                            <span class="badge category-badge">
+                                ${emoji} ${categoryName}
+                            </span>
+                        </div>
+                        <p class="card-text text-muted small mb-3">${quiz.description}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">By ${quiz.createdBy?.username || 'Anonymous'}</small>
+                            <button class="btn btn-sm btn-primary start-quiz-btn" data-quiz-id="${quiz._id}">
+                                Start Quiz
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            quizContainer.appendChild(quizCard);
+            
+            quizCard.querySelector('.start-quiz-btn').addEventListener('click', () => {
+                startQuiz(quiz._id);
+            });
+        });
+    }
+    
+    // Kategóriák lekérdezése
+    async function fetchCategories() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/categories`);
+            const categories = await response.json();
+            
+            document.getElementById('categories-loading').classList.add('d-none');
+            
+            if (categories.length === 0) {
+                categoriesContainer.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <p>No categories found. Check back later!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            renderCategories(categories);
+        } catch (error) {
+            categoriesContainer.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <p class="text-danger">Error loading categories. Please try again later.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Kategóriák megjelenítése az UI-ban
+    function renderCategories(categories) {
+        categoriesContainer.innerHTML = '';
+        
+        categories.forEach(category => {
+            const emoji = categoryEmojis[category.name] || '📝';
+            const imageUrl = `https://source.unsplash.com/300x200/?${encodeURIComponent(category.name.toLowerCase())}`;
+            
+            const categoryCard = document.createElement('div');
+            categoryCard.className = 'col-md-4 col-lg-3 mb-4';
+            categoryCard.innerHTML = `
+                <div class="card category-card h-100">
+                    <div class="card-body text-center">
+                        <div class="display-4 mb-3">${emoji}</div>
+                        <h5 class="card-title">${category.name}</h5>
+                        <p class="card-text small text-muted">${category.description}</p>
+                    </div>
+                    <div class="card-footer bg-white border-0">
+                        <button class="btn btn-primary w-100 browse-category-btn" data-category-id="${category._id}">
+                            Browse Quizzes
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            categoriesContainer.appendChild(categoryCard);
+            
+            categoryCard.querySelector('.browse-category-btn').addEventListener('click', () => {
+                browseCategory(category._id);
+            });
+        });
+    }
+    
+    // Kategóriákban keresett quizok
+    async function browseCategory(categoryId) {
+        try {
+            // Show loading state
+            quizContainer.innerHTML = `
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading quizzes...</span>
+                    </div>
+                    <p class="mt-2">Loading quizzes for this category...</p>
+                </div>
+            `;
+
+            const response = await fetch(`${API_BASE_URL}/quizzes?category=${categoryId}`);
+            const quizzes = await response.json();
+
+            // Vissza gomb és cím megjelenítése
+            quizContainer.innerHTML = `
+                <div class="col-12 mb-4">
+                    <button class="btn btn-outline-primary" onclick="showCategoriesPage()">
+                        <i class="bi bi-arrow-left"></i> Back to Categories
+                    </button>
+                </div>
+            `;
+
+            if (quizzes.length === 0) {
+                quizContainer.innerHTML += `
+                    <div class="col-12 text-center py-5">
+                        <p>No quizzes found in this category.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Quizok megjelenítése az UI-ban
+            quizzes.forEach(quiz => {
+                const categoryName = quiz.category?.name || 'General';
+                const emoji = quiz.emoji || '❓';
+                
+                const quizCard = document.createElement('div');
+                quizCard.className = 'col-md-4 mb-4';
+                quizCard.innerHTML = `
+                    <div class="card quiz-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">${quiz.title}</h5>
+                                <span class="badge category-badge">
+                                    ${emoji} ${categoryName}
+                                </span>
+                            </div>
+                            <p class="card-text text-muted small mb-3">${quiz.description}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">By ${quiz.createdBy?.username || 'Anonymous'}</small>
+                                <button class="btn btn-sm btn-primary start-quiz-btn" data-quiz-id="${quiz._id}">
+                                    Start Quiz
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                quizContainer.appendChild(quizCard);
+                
+                quizCard.querySelector('.start-quiz-btn').addEventListener('click', () => {
+                    startQuiz(quiz._id);
+                });
+            });
+        } catch (error) {
+            console.error('Error loading category quizzes:', error);
+            quizContainer.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <p class="text-danger">Error loading quizzes. Please try again.</p>
+                    <button class="btn btn-primary mt-3" onclick="showCategoriesPage()">Back to Categories</button>
+                </div>
+            `;
+        }
+    }
+    
+    // Quiz indítása
+    async function startQuiz(quizId) {
+        try {
+            // Reset state
+            currentQuiz = null;
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            if (questionTimer) {
+                clearInterval(questionTimer);
+                questionTimer = null;
+            }
+
+                // Betöltés állapot megjelenítése
+            document.getElementById('quiz-detail-page').innerHTML = `
+                <div class="card">
+                    <div class="card-body p-4 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading quiz...</span>
+                        </div>
+                        <p class="mt-2">Loading quiz...</p>
+                    </div>
+                </div>
+            `;
+            showPage('quizDetail');
+
+            const response = await fetch(`${API_BASE_URL}/quizzes/${quizId}`);
+            if (!response.ok) {
+                throw new Error('Failed to load quiz');
+            }
+            
+            const quiz = await response.json();
+            if (!quiz || !quiz.questions || quiz.questions.length === 0) {
+                throw new Error('Quiz has no questions');
+            }
+
+            // Quiz állapot inicializálása
+            currentQuiz = quiz;
+            userAnswers = new Array(quiz.questions.length).fill(null);
+            quizStartTime = Date.now();
+
+            // Quiz interfész megjelenítése
+            document.getElementById('quiz-detail-page').innerHTML = `
+                <div class="card quiz-detail-card">
+                    <div class="card-body p-4">
+                        <div id="quiz-header">
+                            <h2 id="quiz-title" class="mb-2">${quiz.title}</h2>
+                            <p id="quiz-description" class="text-muted mb-3">${quiz.description}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="badge category-badge">${quiz.category?.name || 'General'}</span>
+                                <div class="d-flex align-items-center">
+                                    <span class="me-2">Created by:</span>
+                                    <span class="fw-bold">${quiz.createdBy?.username || 'Anonymous'}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="progress mb-3">
+                                <div class="progress-bar" id="quiz-progress" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between mb-4">
+                                <div>
+                                    <span>Question </span>
+                                    <span id="current-question-num">1</span>
+                                    <span> of </span>
+                                    <span id="total-questions">${quiz.questions.length}</span>
+                                </div>
+                                <div class="timer" id="question-timer">Time left: 15s</div>
+                            </div>
+                        </div>
+                        
+                        <div id="question-container" class="mb-4">
+                            <!-- Question content will be loaded here -->
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-outline-secondary" id="prev-button" onclick="goToPreviousQuestion()">Previous</button>
+                            <button class="btn btn-primary" id="next-button" onclick="goToNextQuestion()">Next</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Első kérdés megjelenítése
+            showQuestion(0);
+        } catch (error) {
+            console.error('Error loading quiz:', error);
+            document.getElementById('quiz-detail-page').innerHTML = `
+                <div class="card">
+                    <div class="card-body p-4 text-center">
+                        <div class="alert alert-danger">
+                            ${error.message || 'Failed to load quiz. Please try again.'}
+                        </div>
+                        <button class="btn btn-primary" onclick="showHomePage()">Back to Quizzes</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    function showQuestion(index) {
+        if (!currentQuiz || !currentQuiz.questions[index]) return;
+
+        const question = currentQuiz.questions[index];
+        const container = document.getElementById('question-container');
+        const progressBar = document.getElementById('quiz-progress');
+        const currentQuestionNum = document.getElementById('current-question-num');
+        
+        currentQuestionNum.textContent = index + 1;
+        progressBar.style.width = `${((index + 1) / currentQuiz.questions.length) * 100}%`;
+        
+        if (questionTimer) {
+            clearInterval(questionTimer);
+        }
+        timeLeft = question.timeLimit || 15;
+        updateTimer();
+        startTimer();
+
+        container.innerHTML = `
+            <h3 class="mb-4">${question.question}</h3>
+            <div class="options-container">
+                ${question.options.map((option, optionIndex) => `
+                    <div class="quiz-option mb-3 ${userAnswers[index] === optionIndex ? 'selected' : ''}"
+                         onclick="selectAnswer(${optionIndex})">
+                        ${option}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        document.getElementById('prev-button').disabled = index === 0;
+        document.getElementById('next-button').textContent = 
+            index === currentQuiz.questions.length - 1 ? 'Finish' : 'Next';
+    }
+
+    function selectAnswer(optionIndex) {
+        userAnswers[currentQuestionIndex] = optionIndex;
+        document.querySelectorAll('.quiz-option').forEach((option, index) => {
+            option.classList.toggle('selected', index === optionIndex);
+        });
+    }
+
+    function updateTimer() {
+        const timerElement = document.getElementById('question-timer');
+        if (timerElement) {
+            timerElement.textContent = `Time left: ${timeLeft}s`;
+            timerElement.classList.toggle('text-danger', timeLeft <= 5);
+        }
+    }
+
+    function startTimer() {
+        questionTimer = setInterval(() => {
+            timeLeft--;
+            updateTimer();
+            if (timeLeft <= 0) {
+                clearInterval(questionTimer);
+                goToNextQuestion();
+            }
+        }, 1000);
+    }
+
+    function goToPreviousQuestion() {
+        if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            showQuestion(currentQuestionIndex);
+        }
+    }
+
+    function goToNextQuestion() {
+        if (currentQuestionIndex < currentQuiz.questions.length - 1) {
+            currentQuestionIndex++;
+            showQuestion(currentQuestionIndex);
+        } else {
+            showQuizResults();
+        }
+    }
+
+    async function showQuizResults() {
+        if (!currentQuiz) return;
+
+        clearInterval(questionTimer);
+        const timeTaken = Math.floor((Date.now() - quizStartTime) / 1000);
+        const minutes = Math.floor(timeTaken / 60);
+        const seconds = timeTaken % 60;
+
+        try {
+            const results = await submitQuiz(userAnswers);
+            const score = results.score;
+            const totalPoints = results.totalPoints;
+            const percent = Math.round((score / totalPoints) * 100);
+
+            document.getElementById('quiz-results-page').innerHTML = `
+                <div class="card">
+                    <div class="card-body p-4 text-center">
+                        <h2 class="mb-4">Quiz Results</h2>
+                        
+                        <div class="mb-4">
+                            <div class="display-1 fw-bold mb-3">${score} / ${totalPoints}</div>
+                            <p class="fs-4">Your Score</p>
+                        </div>
+                        
+                        <div class="row justify-content-center mb-4">
+                            <div class="col-md-8">
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar" role="progressbar" style="width: ${percent}%">
+                                        ${percent}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-sm-4">
+                                <div class="card bg-light">
+                                    <div class="card-body py-3">
+                                        <h5 class="card-title">${results.results.filter(r => r.isCorrect).length}</h5>
+                                        <p class="card-text text-success">Correct</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="card bg-light">
+                                    <div class="card-body py-3">
+                                        <h5 class="card-title">${results.results.filter(r => !r.isCorrect).length}</h5>
+                                        <p class="card-text text-danger">Incorrect</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="card bg-light">
+                                    <div class="card-body py-3">
+                                        <h5 class="card-title">${minutes}:${seconds.toString().padStart(2, '0')}</h5>
+                                        <p class="card-text">Time Taken</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <p class="fs-5">
+                                ${percent >= 90 ? "Outstanding! You're a quiz master!" :
+                                  percent >= 70 ? "Great job! You've done very well!" :
+                                  percent >= 50 ? "Good effort! Keep practicing to improve." :
+                                  "Keep practicing! You'll do better next time."}
+                            </p>
+                        </div>
+                        
+                        <div class="d-flex justify-content-center gap-3">
+                            <button class="btn btn-outline-primary" onclick="retryQuiz()">Try Again</button>
+                            <button class="btn btn-outline-secondary" onclick="showHomePage()">Back to Quizzes</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            showPage('quizResults');
+        } catch (error) {
+            console.error('Error showing results:', error);
+            alert('Error submitting quiz results. Please try again.');
+        }
+    }
+
+    function retryQuiz() {
+        if (currentQuiz) {
+            currentQuestionIndex = 0;
+            userAnswers = new Array(currentQuiz.questions.length).fill(null);
+            quizStartTime = Date.now();
+            showQuestion(0);
+            showPage('quizDetail');
+        }
+    }
+
+    // Saját Quiz oldal megjelenítése
+    document.getElementById('create-quiz-link').addEventListener('click', () => {
+        if (!token) {
+            alert('Please log in to create a quiz');
+            showPage('login');
+            return;
+        }
+        showCreateQuizPage();
+    });
+
+    function showCreateQuizPage() {
+        showPage('createQuiz');
+        
+        // Cím frissítése
+        document.getElementById('quiz-form-title').textContent = 'Create a New Quiz';
+        
+        // Form reset és összes adat törlése
+        const form = document.getElementById('create-quiz-form');
+        form.reset();
+        form.dataset.mode = 'create';
+        form.dataset.quizId = '';
+        
+        // Kérdések tárolójának törlése
+        document.getElementById('questions-container').innerHTML = '';
+        document.getElementById('create-quiz-alert').classList.add('d-none');
+        
+        // Kategóriák betöltése
+        loadCategories();
+        
+        // Alapértelmezett kérdés hozzáadása
+        addQuestion();
+    }
+
+    // Kategóriák betöltése
+    async function loadCategories() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/categories`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch categories');
+            }
+            const categories = await response.json();
+            
+            const categorySelect = document.getElementById('quiz-category-input');
+            categorySelect.innerHTML = '<option value="">Select a category</option>';
+            categories.forEach(category => {
+                categorySelect.innerHTML += `<option value="${category._id}">${category.name}</option>`;
+            });
+        } catch (error) {
+            console.error('Error loading categories:', error);
+            alert('Error loading categories. Please try again.');
+        }
+    }
+
+    // Form submit kezelése
+    async function handleQuizFormSubmit(e) {
+        e.preventDefault();
+        
+        if (!token) {
+            showCreateQuizAlert('You must be logged in to create or edit a quiz.', 'danger');
+            return;
+        }
+
+        try {
+            const formData = {
+                title: document.getElementById('quiz-title-input').value.trim(),
+                description: document.getElementById('quiz-desc-input').value.trim(),
+                category: document.getElementById('quiz-category-input').value,
+                emoji: document.getElementById('quiz-emoji-input').value || '📝',
+                isPublic: document.getElementById('quiz-public-input').checked,
+                questions: []
+            };
+
+            // Form adatok ellenőrzése
+            if (!formData.title || !formData.description || !formData.category) {
+                throw new Error('Please fill out all required fields.');
+            }
+
+            // Kérdések adatainak összegyűjtése
+            const questionBlocks = document.querySelectorAll('.question-block');
+            if (questionBlocks.length === 0) {
+                throw new Error('Please add at least one question.');
+            }
+
+            questionBlocks.forEach((block, idx) => {
+                const question = block.querySelector('.question-input').value.trim();
+                const options = Array.from(block.querySelectorAll('.option-input')).map(inp => inp.value.trim());
+                const correctAnswer = Array.from(block.querySelectorAll('.correct-radio')).findIndex(r => r.checked);
+                const timeLimit = parseInt(block.querySelector('.time-limit-input').value, 10);
+                const points = parseInt(block.querySelector('.points-input').value, 10);
+
+                if (!question || options.some(opt => !opt) || correctAnswer === -1) {
+                    throw new Error(`Please complete all fields for question ${idx + 1}`);
+                }
+
+                formData.questions.push({ question, options, correctAnswer, timeLimit, points });
+            });
+
+            const form = document.getElementById('create-quiz-form');
+            const isEdit = form.dataset.mode === 'edit';
+            const quizId = form.dataset.quizId;
+            const url = isEdit ? 
+                `${API_BASE_URL}/quizzes/${quizId}` : 
+                `${API_BASE_URL}/quizzes`;
+            const method = isEdit ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || `Failed to ${isEdit ? 'update' : 'create'} quiz`);
+            }
+
+            showCreateQuizAlert(`Quiz ${isEdit ? 'updated' : 'created'} successfully!`, 'success');
+            
+            // Form reset és átirányítás rövid késleltetés után
+            setTimeout(() => {
+                form.reset();
+                form.dataset.mode = 'create';
+                form.dataset.quizId = '';
+                showMyQuizzes();
+            }, 1500);
+
+        } catch (error) {
+            showCreateQuizAlert(error.message, 'danger');
+        }
+    }
+
+    // Quiz szerkesztése
+    async function editQuiz(quizId) {
+        if (!quizId) {
+            console.error('No quiz ID provided for editing');
+            return;
+        }
+
+        try {
+            showPage('createQuiz');
+            
+            // Cím frissítése
+            document.getElementById('quiz-form-title').textContent = 'Edit Quiz';
+            
+            // Form állapot frissítése szerkesztéshez
+            const form = document.getElementById('create-quiz-form');
+            form.reset();
+            form.dataset.mode = 'edit';
+            form.dataset.quizId = quizId;
+            
+            // Kérdések tárolójának törlése
+            document.getElementById('questions-container').innerHTML = '';
+            document.getElementById('create-quiz-alert').classList.add('d-none');
+            
+            // Kategóriák betöltése először
+            await loadCategories();
+            
+            // Ezután a quiz adatok lekérdezése
+            const response = await fetch(`${API_BASE_URL}/quizzes/${quizId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    token = '';
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    showPage('login');
+                    throw new Error('Session expired. Please log in again.');
+                }
+                throw new Error('Failed to fetch quiz data');
+            }
+
+            const quiz = await response.json();
+
+            if (!quiz || typeof quiz !== 'object') {
+                throw new Error('Invalid quiz data received');
+            }
+
+            // Form kitöltése quiz adatokkal
+            document.getElementById('quiz-title-input').value = quiz.title || '';
+            document.getElementById('quiz-desc-input').value = quiz.description || '';
+            document.getElementById('quiz-category-input').value = quiz.category?._id || '';
+            document.getElementById('quiz-emoji-input').value = quiz.emoji || '';
+            document.getElementById('quiz-public-input').checked = !!quiz.isPublic;
+
+            // Meglévő kérdések hozzáadása
+            if (Array.isArray(quiz.questions)) {
+                quiz.questions.forEach(question => {
+                    if (question && typeof question === 'object') {
+                        addQuestion(question);
+                    }
+                });
+            }
+
+            // Ha nincs hozzáadva kérdés (érvénytelen adat miatt), egy üres kérdés hozzáadása
+            if (!document.querySelectorAll('.question-block').length) {
+                addQuestion();
+            }
+
+        } catch (error) {
+            console.error('Error loading quiz for editing:', error);
+            showCreateQuizAlert('Error loading quiz for editing: ' + error.message, 'danger');
+            setTimeout(() => {
+                showMyQuizzes();
+            }, 2000);
+        }
+    }
+
+    // Event listener hozzáadása
+    document.getElementById('create-quiz-form').addEventListener('submit', handleQuizFormSubmit);
+    document.getElementById('cancel-quiz-btn').addEventListener('click', () => {
+        showMyQuizzes();
+    });
+    document.getElementById('add-question-btn').addEventListener('click', () => addQuestion());
+    document.getElementById('create-quiz-link').addEventListener('click', () => {
+        if (!token) {
+            alert('Please log in to create a quiz');
+            showPage('login');
+            return;
+        }
+        showCreateQuizPage();
+    });
+
+    // Saját Quiz oldal megjelenítése
+    async function showMyQuizzes() {
+        if (!token) {
+            alert('Please log in to view your quizzes');
+            showPage('login');
+            return;
+        }
+
+        showPage('myQuizzes');
+        const container = document.getElementById('my-quizzes-container');
+        const loadingElement = document.getElementById('my-quizzes-loading');
+        
+        try {
+            // Betöltés állapot megjelenítése
+            loadingElement.classList.remove('d-none');
+            container.innerHTML = '';
+
+            const response = await fetch(`${API_BASE_URL}/quizzes/user/quizzes`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                console.error('Error parsing response:', parseError);
+                throw new Error('Failed to parse server response');
+            }
+
+            // Betöltés állapot elrejtése
+            loadingElement.classList.add('d-none');
+
+            if (!response.ok) {
+                // Ha a token érvénytelen, átirányítás a bejelentkezés oldalra
+                if (response.status === 401) {
+                    token = '';
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    showPage('login');
+                    throw new Error('Session expired. Please log in again.');
+                }
+                throw new Error(data.message || 'Failed to fetch quizzes');
+            }
+
+            if (!Array.isArray(data)) {
+                console.error('Unexpected response format:', data);
+                throw new Error('Received invalid data format from server');
+            }
+
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <p>You haven't created any quizzes yet.</p>
+                        <button class="btn btn-primary mt-3" onclick="showCreateQuizPage()">Create Your First Quiz</button>
+                    </div>
+                `;
+                return;
+            }
+
+            // Tároló törlése és quizok megjelenítése
+            container.innerHTML = '';
+            data.forEach(quiz => {
+                const categoryName = quiz.category?.name || 'General';
+                const emoji = quiz.emoji || '❓';
+                
+                const quizCard = document.createElement('div');
+                quizCard.className = 'col-md-4 mb-4';
+                quizCard.innerHTML = `
+                    <div class="card quiz-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">${quiz.title}</h5>
+                                <span class="badge category-badge">
+                                    ${emoji} ${categoryName}
+                                </span>
+                            </div>
+                            <p class="card-text text-muted small mb-3">${quiz.description}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Questions: ${quiz.questions.length}</small>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary edit-quiz-btn" data-quiz-id="${quiz._id}">
+                                        Edit
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger delete-quiz-btn" data-quiz-id="${quiz._id}">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(quizCard);
+            });
+
+            // Event listener hozzáadása a quizok szerkesztéséhez
+            container.querySelectorAll('.edit-quiz-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const quizId = e.target.dataset.quizId;
+                    editQuiz(quizId);
+                });
+            });
+
+            container.querySelectorAll('.delete-quiz-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const quizId = e.target.dataset.quizId;
+                    deleteQuiz(quizId);
+                });
+            });
+
+        } catch (error) {
+            console.error('Error loading quizzes:', error);
+            loadingElement.classList.add('d-none');
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <p class="text-danger">Error loading your quizzes: ${error.message}</p>
+                    <button class="btn btn-primary mt-3" onclick="showMyQuizzes()">Try Again</button>
+                </div>
+            `;
+        }
+    }
+
+    // Quiz törlése
+    async function deleteQuiz(quizId) {
+        if (!confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/quizzes/${quizId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                showMyQuizzes();
+            } else {
+                const data = await response.json();
+                alert(data.message || 'Error deleting quiz');
+            }
+        } catch (error) {
+            console.error('Error deleting quiz:', error);
+            alert('Error deleting quiz. Please try again.');
+        }
+    }
+
+    // Emoji kiválasztó funkcionalitás
+    document.querySelectorAll('#emoji-suggestions button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const currentEmoji = document.getElementById('quiz-emoji-input').value;
+            const newEmoji = btn.textContent.trim();
+            
+            // Ha már van egy emoji, hozzáfűzni a újat
+            document.getElementById('quiz-emoji-input').value = currentEmoji ? currentEmoji + newEmoji : newEmoji;
+        });
+    });
+
+    async function submitQuiz(answers) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/quizzes/${currentQuiz._id}/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ answers })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to submit quiz');
+            }
+
+            const data = await response.json();
+            return {
+                score: data.score,
+                totalPoints: data.totalPoints,
+                results: data.results
+            };
+        } catch (error) {
+            console.error('Error submitting quiz:', error);
+            throw error;
+        }
+    }
+
+    // Kérdés hozzáadása
+    function addQuestion(existingQuestion = null) {
+        const qIndex = document.querySelectorAll('.question-block').length;
+        const container = document.getElementById('questions-container');
+        const qBlock = document.createElement('div');
+        qBlock.className = 'question-block border rounded p-3 mb-3';
+        
+        qBlock.innerHTML = `
+            <div class="mb-2">
+                <label>Question ${qIndex + 1}</label>
+                <input type="text" class="form-control question-input" required 
+                    value="${existingQuestion ? existingQuestion.question : ''}">
+            </div>
+            <div class="mb-2">
+                <label>Options (mark the correct one)</label>
+                <div class="row g-2">
+                    ${[0,1,2,3].map(i => `
+                        <div class="col-6">
+                            <div class="input-group">
+                                <div class="input-group-text">
+                                    <input type="radio" name="correct${qIndex}" class="form-check-input correct-radio" 
+                                        value="${i}" ${existingQuestion && existingQuestion.correctAnswer === i ? 'checked' : ''}>
+                                </div>
+                                <input type="text" class="form-control option-input" required 
+                                    value="${existingQuestion && existingQuestion.options[i] ? existingQuestion.options[i] : ''}" 
+                                    placeholder="Option ${i+1}">
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="mb-2">
+                <label>Time Limit (seconds)</label>
+                <input type="number" class="form-control time-limit-input" 
+                    value="${existingQuestion ? existingQuestion.timeLimit : '15'}" min="5" max="120" required>
+            </div>
+            <div class="mb-2">
+                <label>Points</label>
+                <input type="number" class="form-control points-input" 
+                    value="${existingQuestion ? existingQuestion.points : '1'}" min="1" max="100" required>
+            </div>
+            <button type="button" class="btn btn-danger btn-sm remove-question-btn">Remove Question</button>
+        `;
+        
+        container.appendChild(qBlock);
+
+        // Remove gomb eseménykezelő hozzáadása
+        qBlock.querySelector('.remove-question-btn').addEventListener('click', () => {
+            qBlock.remove();
+            updateQuestionNumbers();
+        });
+
+        // Radio gombok eseménykezelőjének hozzáadása
+        const radioButtons = qBlock.querySelectorAll('.correct-radio');
+        radioButtons.forEach(radio => {
+            radio.addEventListener('change', () => {
+                // Egyetlen radio gombot ellenőrizni a kérdésblokkban
+                radioButtons.forEach(r => {
+                    if (r !== radio) r.checked = false;
+                });
+            });
+        });
+    }
+
+    // Kérdés sorszám frissítése
+    function updateQuestionNumbers() {
+        document.querySelectorAll('.question-block').forEach((block, index) => {
+            block.querySelector('label').textContent = `Question ${index + 1}`;
+        });
+    }
+
+    // Alert üzenet megjelenítése
+    function showCreateQuizAlert(message, type) {
+        const alertElement = document.getElementById('create-quiz-alert');
+        alertElement.textContent = message;
+        alertElement.className = `alert alert-${type} mt-3`;
+        alertElement.classList.remove('d-none');
+        setTimeout(() => {
+            alertElement.classList.add('d-none');
+        }, 3000);
+    }
+
+</script>
+</body>
+</html>
