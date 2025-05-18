@@ -25,12 +25,12 @@
    npm install
    ```
    ### Szükséges npm csomagok:
-   -express
-   -mongoose
-   -jsonwebtoken
-   -bcryptjs
-   -cors
-   -dotenv
+   - express
+   - mongoose
+   - jsonwebtoken
+   - bcryptjs
+   - cors
+   - dotenv
 3. Környezeti Változók Beállítása
    ### Hozz létre egy .env fájlt a server mappában:
    ```
