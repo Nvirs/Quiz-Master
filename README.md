@@ -19,12 +19,12 @@
    cd webprog_II_beadando
    ```
 2. Függőségek Telepítése
-   # Backend függőségek
+   ### Backend függőségek
    ```bash
    cd server
    npm install
    ```
-   #Szükséges npm csomagok:
+   ### Szükséges npm csomagok:
    -express
    -mongoose
    -jsonwebtoken
@@ -32,24 +32,24 @@
    -cors
    -dotenv
 3. Környezeti Változók Beállítása
-   # Hozz létre egy .env fájlt a server mappában:
+   ### Hozz létre egy .env fájlt a server mappában:
    ```
    MONGODB_URI=mongodb://localhost:27017/quiz_db
    JWT_SECRET=your_jwt_secret_key
    PORT=5000
    ```
 4. Adatbázis Konfigurálása
-   # Indítsd el a MongoDB szervert:
+   ### Indítsd el a MongoDB szervert:
    ```bash
    mongod
    ```
-   # Az adatbázis automatikusan létrejön az első kapcsolódáskor
+   ### Az adatbázis automatikusan létrejön az első kapcsolódáskor
 5.Alkalmazás Indítása
-   # Backend szerver indítása:
+   ### Backend szerver indítása:
    ```bash
    cd server
    npm start
    ```
-   # Frontend megnyitása:
+   ### Frontend megnyitása:
    Nyisd meg a test.html fájlt egy modern böngészőben
 
