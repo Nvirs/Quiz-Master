@@ -15,8 +15,8 @@
 ## Telepítési Lépések
 1. Projekt Klónozása:
    ```bash
-   git clone <repository-url>
-   cd webprog_II_beadando
+   git clone https://github.com/Nvirs/Quiz-Master
+   cd projekt elérési mappája
    ```
 2. Függőségek Telepítése
    ### Backend függőségek
