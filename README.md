@@ -43,7 +43,7 @@
    ```bash
    mongod
    ```
-   ### Az adatbázis automatikusan létrejön az első kapcsolódáskor
+   #### Az adatbázis automatikusan létrejön az első kapcsolódáskor
 5.Alkalmazás Indítása
    ### Backend szerver indítása:
    ```bash
